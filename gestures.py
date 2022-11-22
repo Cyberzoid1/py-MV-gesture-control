@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import mediapipe as mp
 import time
+import itertools
 
 
 class GESTURES():
@@ -46,9 +47,11 @@ class GESTURES():
 
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                print("----------------------------")
-                print(hand_landmarks)
-                self.normalize_landmarks(image, hand_landmarks)
+                #print("----------------------------")
+                landmark_list = self.process_landmarks(image, hand_landmarks)
+                print(f"list: {landmark_list}")
+                landmark_list_nom = self.normalize_landmarks(image, landmark_list)
+                print(f"nom: {landmark_list_nom}")
                 self.mp_drawing.draw_landmarks(
                     image,
                     hand_landmarks,
@@ -56,7 +59,24 @@ class GESTURES():
                     self.mp_drawing_styles.get_default_hand_landmarks_style(),
                     self.mp_drawing_styles.get_default_hand_connections_style())
         
-        return image
+        return image, results
+
+
+    # Inspired by: https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L215
+    def process_landmarks(self, image, landmarks):
+        image_width, image_height = image.shape[1], image.shape[0]
+        
+        landmark_point = []
+
+        # Keypoint
+        for _, landmark in enumerate(landmarks.landmark):
+            landmark_x = min(int(landmark.x * image_width), image_width - 1)
+            landmark_y = min(int(landmark.y * image_height), image_height - 1)
+            # landmark_z = landmark.z
+
+            landmark_point.append([landmark_x, landmark_y])
+
+        return landmark_point
 
     # https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L231
     def normalize_landmarks(self, image, landmarks):
@@ -71,8 +91,6 @@ class GESTURES():
                 temp_landmark_list[index][0] = temp_landmark_list[index][0] - base_x
                 temp_landmark_list[index][1] = temp_landmark_list[index][1] - base_y
             
-            print("------------")
-            print(temp_landmark_list)
             # Convert to a one-dimensional list
             temp_landmark_list = list(
                 itertools.chain.from_iterable(temp_landmark_list))
@@ -87,8 +105,6 @@ class GESTURES():
 
             return temp_landmark_list
         
-        
-
 
     def disploy_output(self, image):
         cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
@@ -99,11 +115,10 @@ class GESTURES():
         while True:
             t_curr = time.perf_counter()
             img = self.get_image()
-            img = self.process_image(img)
+            img, hand_results = self.process_image(img)
             self.disploy_output(img)
             t_compute = time.perf_counter() - t_curr
             print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
-            
 
 
 def main():
