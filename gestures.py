@@ -25,6 +25,11 @@ class GESTURES():
         
 
     def get_image(self):
+        """Capture image frame
+
+        Returns:
+            numpy: Image frame
+        """
         if not self.cap.isOpened():
             print("Cap closed")
             self.cap.open()
@@ -38,6 +43,15 @@ class GESTURES():
 
     
     def process_image(self, image):
+        """Detects hand landmarks
+
+        Args:
+            image (numpy): Image to process
+
+        Returns:
+            image: Image with points drown
+            results: Final landmark points
+        """
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
@@ -64,6 +78,15 @@ class GESTURES():
 
     # Inspired by: https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L215
     def process_landmarks(self, image, landmarks):
+        """Takes raw media hand results and converts it into a list of image points
+
+        Args:
+            image (numpy): origional cv image
+            landmarks (list): mediahands results
+
+        Returns:
+            list: List of landmark points
+        """
         image_width, image_height = image.shape[1], image.shape[0]
         
         landmark_point = []
@@ -80,38 +103,54 @@ class GESTURES():
 
     # https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L231
     def normalize_landmarks(self, image, landmarks):
-            temp_landmark_list = copy.deepcopy(landmarks)
+        """Takes a list of landmarks and converts them to relative distances
 
-            # Convert to relative coordinates
-            base_x, base_y = 0, 0
-            for index, landmark_point in enumerate(temp_landmark_list):
-                if index == 0:
-                    base_x, base_y = landmark_point[0], landmark_point[1]
+        Args:
+            image (numpy): origional cv image
+            landmarks (list): mediahands results
 
-                temp_landmark_list[index][0] = temp_landmark_list[index][0] - base_x
-                temp_landmark_list[index][1] = temp_landmark_list[index][1] - base_y
-            
-            # Convert to a one-dimensional list
-            temp_landmark_list = list(
-                itertools.chain.from_iterable(temp_landmark_list))
+        Returns:
+            list: List of relative landmark points
+        """
+        temp_landmark_list = copy.deepcopy(landmarks)
 
-            # Normalization
-            max_value = max(list(map(abs, temp_landmark_list)))
+        # Convert to relative coordinates
+        base_x, base_y = 0, 0
+        for index, landmark_point in enumerate(temp_landmark_list):
+            if index == 0:
+                base_x, base_y = landmark_point[0], landmark_point[1]
 
-            def normalize_(n):
-                return n / max_value
+            temp_landmark_list[index][0] = temp_landmark_list[index][0] - base_x
+            temp_landmark_list[index][1] = temp_landmark_list[index][1] - base_y
+        
+        # Convert to a one-dimensional list
+        temp_landmark_list = list(
+            itertools.chain.from_iterable(temp_landmark_list))
 
-            temp_landmark_list = list(map(normalize_, temp_landmark_list))
+        # Normalization
+        max_value = max(list(map(abs, temp_landmark_list)))
 
-            return temp_landmark_list
+        def normalize_(n):
+            return n / max_value
+
+        temp_landmark_list = list(map(normalize_, temp_landmark_list))
+
+        return temp_landmark_list
         
 
     def disploy_output(self, image):
+        """Display image on screen
+
+        Args:
+            image (numpy): Input image
+        """
         cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
         if cv2.waitKey(5) & 0xFF == 27:
             exit()
 
     def run(self):
+        """Main gesture function
+        """
         while True:
             t_curr = time.perf_counter()
             img = self.get_image()
