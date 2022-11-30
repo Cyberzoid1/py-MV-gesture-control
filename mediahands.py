@@ -22,7 +22,7 @@ class MEDIAHANDS():
         self.mp_drawing_styles = mp.solutions.drawing_styles
 
         print("Gestures Initialized")
-        
+
 
     def get_image(self):
         """Capture image frame
@@ -41,7 +41,7 @@ class MEDIAHANDS():
 
         return image
 
-    
+
     def process_image(self, image):
         """Detects hand landmarks
 
@@ -60,20 +60,24 @@ class MEDIAHANDS():
         results = self.hands.process(image)
 
         if results.multi_hand_landmarks:
+            landmark_list_nom_return = [] # Return variable
             for hand_landmarks in results.multi_hand_landmarks:
                 #print("----------------------------")
                 landmark_list = self.process_landmarks(image, hand_landmarks)
-                print(f"list: {landmark_list}")
+                #print(f"list: {landmark_list}")
                 landmark_list_nom = self.normalize_landmarks(image, landmark_list)
-                print(f"nom: {landmark_list_nom}")
+                landmark_list_nom_return.append(landmark_list_nom) # Append to return variable
+                #print(f"nom: {landmark_list_nom}")
                 self.mp_drawing.draw_landmarks(
                     image,
                     hand_landmarks,
                     self.mp_hands.HAND_CONNECTIONS,
                     self.mp_drawing_styles.get_default_hand_landmarks_style(),
                     self.mp_drawing_styles.get_default_hand_connections_style())
-        
-        return image, results
+            return image, landmark_list_nom_return
+        else:
+            results = None
+            return image, results
 
 
     # Inspired by: https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L215
@@ -136,7 +140,7 @@ class MEDIAHANDS():
         temp_landmark_list = list(map(normalize_, temp_landmark_list))
 
         return temp_landmark_list
-        
+
 
     def disploy_output(self, image):
         """Display image on screen
@@ -147,6 +151,7 @@ class MEDIAHANDS():
         cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
         if cv2.waitKey(5) & 0xFF == 27:
             exit()
+
 
     def run(self):
         """Main gesture function
@@ -160,8 +165,20 @@ class MEDIAHANDS():
             print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
 
 
+    def run_once(self):
+        """Main gesture funtion
+        """
+        t_curr = time.perf_counter()
+        img = self.get_image()
+        img, hand_results = self.process_image(img)
+        self.disploy_output(img)
+        t_compute = time.perf_counter() - t_curr
+        print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
+        return hand_results
+
+
 def main():
-    print("Start Gestures")
+    print("Start hands")
     hands = MEDIAHANDS()
     hands.run()
     
