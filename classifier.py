@@ -14,8 +14,19 @@ class CLASSIFIER():
     def __init__(self):
         pass
 
-    def _get_data(self):
-        return trainX, trainY, testX, testY
+    def _get_data(self, data):
+        print(f"Raw data: {data}")
+        print(f"\nInput: {data[3][0]}")
+        print(f"\nLabel: {data[3][1]}")
+        
+        # https://stackoverflow.com/a/68620356
+        datasetX = [x[0] for x in data]
+        datasetY = [x[1] for x in data]
+        print(datasetY)
+        dataset = tf.data.Dataset.from_tensor_slices(datasetX)
+        for element in dataset:
+            print(element)
+        return #trainX, trainY, testX, testY
 
     def _get_model(self, len_classes=5, dropout_rate=0.2):
         model = Sequential()
@@ -29,10 +40,14 @@ class CLASSIFIER():
         #print(f"Model Summary: {model.summary()}")
         return model
 
-    def train(self):
+    def train(self, data):
         model = self._get_model()
-        trainX, trainY, testX, testY = self._get_data()
+        trainX, trainY, testX, testY = self._get_data(data)
         # fit model
+        
+        print("debug exit")
+        exit()
+
         history = model.fit(trainX,trainY, epochs=100, batch_size=32, validation_data=(testX, testY), verbose=1)
         # evaluate model
         _, acc = model.evaluate(testX, testY, verbose=0)
