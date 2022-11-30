@@ -6,7 +6,7 @@ import time
 import itertools
 
 
-class GESTURES():
+class MEDIAHANDS():
     def __init__(self):
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
@@ -162,8 +162,8 @@ class GESTURES():
 
 def main():
     print("Start Gestures")
-    gestures = GESTURES()
-    gestures.run()
+    hands = MEDIAHANDS()
+    hands.run()
     
 if __name__ == "__main__":
     main()
