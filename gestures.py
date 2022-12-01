@@ -61,11 +61,15 @@ def train_from_file():
     with open('training_data.pickle', 'rb') as f:
         training_data = pickle.load(f)
 
-    classifier.train(training_data)
+    no_classes = 5
+    classifier.train(no_classes, training_data)
 
 
 
 def main():
+    train_from_file()
+    return
+
     print("Press key for mode: ")
     key = keyboard.read_key()
     print(f"You pressed {key}")

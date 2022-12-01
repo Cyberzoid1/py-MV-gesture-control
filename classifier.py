@@ -10,47 +10,50 @@ from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Dropout
 
 
+
 class CLASSIFIER():
     def __init__(self):
         pass
 
     def _get_data(self, data):
-        print(f"Raw data: {data}")
-        print(f"\nInput: {data[3][0]}")
-        print(f"\nLabel: {data[3][1]}")
-        
         # https://stackoverflow.com/a/68620356
+        # Extract features and lavels from data
         datasetX = [x[0] for x in data]
         datasetY = [x[1] for x in data]
-        print(datasetY)
-        dataset = tf.data.Dataset.from_tensor_slices(datasetX)
-        for element in dataset:
-            print(element)
-        return #trainX, trainY, testX, testY
+        
+        # Create tensorflow dataset & shuffle
+        dataset = tf.data.Dataset.from_tensor_slices((datasetX, datasetY))
+        dataset = dataset.shuffle(buffer_size = 1000, seed=123, reshuffle_each_iteration=False)
+        
+        # Split dataset
+        train_split = int(round(len(dataset)*0.8))
+        print(f"Samples: {len(dataset)}  Split: {train_split}")
+        train_ds = dataset.take(train_split)
+        test_ds = dataset.skip(train_split)
 
-    def _get_model(self, len_classes=5, dropout_rate=0.2):
+        return train_ds, test_ds
+
+    def _get_model(self, no_classes=5, dropout_rate=0.2):
         model = Sequential()
-        model.add(Dense(100, activation='relu', kernel_initializer='he_uniform', input_shape=(None, None, 1)))
+        model.add(Dense(42, activation='relu', kernel_initializer='he_uniform', input_shape=(1,)))
         model.add(Dropout(dropout_rate))
         model.add(BatchNormalization())
-        model.add(Dense(len_classes, activation='softmax'))
+        model.add(Dense(no_classes, activation='softmax'))
         # compile model
         opt = SGD(learning_rate=0.01, momentum=0.9)
-        model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
-        #print(f"Model Summary: {model.summary()}")
+        model.compile(optimizer=opt, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        print(f"Model Summary: {model.summary()}")
         return model
 
-    def train(self, data):
+    def train(self, classes, data):
         model = self._get_model()
-        trainX, trainY, testX, testY = self._get_data(data)
-        # fit model
-        
-        print("debug exit")
-        exit()
+        train_ds, test_ds = self._get_data(data)
 
-        history = model.fit(trainX,trainY, epochs=100, batch_size=32, validation_data=(testX, testY), verbose=1)
+        # fit model
+        history = model.fit(train_ds, epochs=100, batch_size=7, validation_data=test_ds, verbose=1)
+
         # evaluate model
-        _, acc = model.evaluate(testX, testY, verbose=0)
+        _, acc = model.evaluate(test_ds, verbose=0)
         print('> %.3f' % (acc * 100.0))
 
     def __call__(self, input):
