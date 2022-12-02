@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import random
 import tensorflow as tf
 #from tensorflow.keras.utils import to_categorical
@@ -6,6 +6,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Dropout
 
@@ -27,27 +28,33 @@ class CLASSIFIER():
 
         random.shuffle(data)
 
-        datasetX = numpy.array([x[0] for x in data])
-        datasetY = numpy.array([x[1] for x in data])
+        datasetX = np.array([x[0] for x in data])
+        datasetY = np.array([x[1] for x in data])
 
         print(f"\nLen x: {len(datasetX)}, Len y: {len(datasetY)}")
 
+        #creating a 2D array filled with 0's
+        labels = np.zeros((datasetY.size, datasetY.max()+1), dtype=int)
+
+        #replacing 0 with a 1 at the index of the original array
+        labels[np.arange(datasetY.size),datasetY] = 1 
+        
         # Split dataset
         train_split = int(round(len(datasetX)*0.8))
         print(f"Samples: {len(datasetX)}  Split: {train_split}")
         trainX = datasetX[:train_split]
-        trainY = datasetY[:train_split]
+        trainY = labels[:train_split]
         testX = datasetX[train_split:]
-        testY = datasetY[train_split:]
+        testY = labels[train_split:]
         
         # print("\nprinting datasetX elements")
-        # for element in datasetX:
-        #     print('t')
+        # for i, element in enumerate(trainX):
+        #     print(f"datasetX Element: {i}")
         #     print(element)
         
         # print("\nprinting datasetY elements")
-        # for element in datasetY:
-        #     print('t')
+        # for i, element in enumerate(trainY):
+        #     print(f"datasetY Element: {i}")
         #     print(element)
 
         print(type(trainX))
@@ -57,17 +64,18 @@ class CLASSIFIER():
         return trainX, trainY, testX, testY
 
 
-    def _get_model(self, no_classes=4, dropout_rate=0.2):
+    def _get_model(self, no_classes=None, dropout_rate=0.2):
         model = Sequential()
         model.add(Input(shape=(42,), name="Initial-Input"))
-        model.add(Dropout(dropout_rate))
+        #model.add(Dropout(dropout_rate))
+        model.add(BatchNormalization())
+        model.add(Dense(10, activation='sigmoid', kernel_initializer='he_uniform', name="First-Dense"))
         #model.add(BatchNormalization())
-        model.add(Dense(20, activation='relu', kernel_initializer='he_uniform', name="First-Dense"))
-        #model.add(BatchNormalization())
-        model.add(Dense(10, activation='relu', kernel_initializer='he_uniform', name="Second-Dense"))
+        #model.add(Dense(10, activation='sigmoid', kernel_initializer='he_uniform', name="Second-Dense"))
         model.add(Dense(no_classes, activation='softmax'))
         # compile model
-        opt = SGD(learning_rate=0.001)
+        #opt = SGD(learning_rate=0.00001)
+        opt = Adam(learning_rate=0.0001)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
         print(f"Model Summary: {model.summary()}")
         return model
@@ -77,8 +85,8 @@ class CLASSIFIER():
         model = self._get_model(no_classes=no_classes, dropout_rate=0.2)
         trainX, trainY, testX, testY = self._get_data(data)
 
-        # print("\nlen trainX", len(trainX))
-        # print("len testX", len(testX))
+        print("\nlen trainX", trainX.shape)
+        print("len testX", trainY.shape)
 
         # print("\ntrainX", trainX)
         # print("trainY", trainY)
@@ -86,7 +94,7 @@ class CLASSIFIER():
 
         # fit model
         print("\nFitting model")
-        history = model.fit(trainX, trainY, epochs=60, batch_size=7, validation_data=(testX, testY), verbose=1)
+        history = model.fit(trainX, trainY, epochs=6, batch_size=64, validation_data=(testX, testY), verbose=1)
 
         # evaluate model
         _, acc = model.evaluate(testX, testY, verbose=0)
@@ -111,7 +119,7 @@ def test():
     with open('training_data.pickle', 'rb') as f:
         training_data = pickle.load(f)
 
-    no_classes = 1
+    no_classes = 6
     classifier.train(no_classes, training_data)
 
 
