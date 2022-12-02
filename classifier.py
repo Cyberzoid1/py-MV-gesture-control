@@ -1,3 +1,5 @@
+import numpy
+import random
 import tensorflow as tf
 #from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
@@ -17,56 +19,55 @@ class CLASSIFIER():
         # Extract features and labels from data
         
         # Testing data override
-        data = [([1,2,3,4,5], 1),
-                ([1,2,3,4,5], 1),
-                ([1,2,2,2,5], 2),
-                ([1,2,2,2,5], 2),
-                ([1,3,3,3,5], 3)]
-        
-        datax = [[1,2,3,4,5],
-                [1,2,3,4,5],
-                [1,2,2,2,5],
-                [1,2,2,2,5],
-                [1,3,3,3,5]]
-        
-        datay = [1, 1, 2, 2, 3]
-    
-        datasetX = [x for x in datax]
-        datasetY = [x for x in datay]
+        # data = [([1,2,3,4,5], 1),
+        #         ([1,2,3,4,5], 1),
+        #         ([1,2,2,2,5], 2),
+        #         ([1,2,2,2,5], 2),
+        #         ([1,3,3,3,5], 3)]
+
+        random.shuffle(data)
+
+        datasetX = numpy.array([x[0] for x in data])
+        datasetY = numpy.array([x[1] for x in data])
 
         print(f"\nLen x: {len(datasetX)}, Len y: {len(datasetY)}")
 
-        # Create tensorflow dataset & shuffle
-        dataset = tf.data.Dataset.from_tensor_slices((datasetX, datasetY))
-        #dataset = dataset.shuffle(buffer_size = 1000, seed=123, reshuffle_each_iteration=False)
-        #dataset = dataset.batch(16)
-
         # Split dataset
-        train_split = int(round(len(dataset)*0.8))
-        print(f"Samples: {len(dataset)}  Split: {train_split}")
-        train_ds = dataset.take(train_split)
-        test_ds = dataset.skip(train_split)
+        train_split = int(round(len(datasetX)*0.8))
+        print(f"Samples: {len(datasetX)}  Split: {train_split}")
+        trainX = datasetX[:train_split]
+        trainY = datasetY[:train_split]
+        testX = datasetX[train_split:]
+        testY = datasetY[train_split:]
         
-        print("\nprinting elements")
-        for element in train_ds:
-            print('t')
-            print(element)
+        # print("\nprinting datasetX elements")
+        # for element in datasetX:
+        #     print('t')
+        #     print(element)
         
+        # print("\nprinting datasetY elements")
+        # for element in datasetY:
+        #     print('t')
+        #     print(element)
 
-        #exit()
+        print(type(trainX))
+        print(type(trainY))
+        print("trainX shape: ", trainX.shape)
+        print("trainY shape: ", trainY.shape)
+        return trainX, trainY, testX, testY
 
-        return train_ds, test_ds
 
-
-    def _get_model(self, no_classes=5, dropout_rate=0.2):
+    def _get_model(self, no_classes=4, dropout_rate=0.2):
         model = Sequential()
-        model.add(Input(shape=(5,), name="Initial-Input"))
-        model.add(Dense(55, activation='relu', kernel_initializer='he_uniform', name="First-Dense"))
+        model.add(Input(shape=(42,), name="Initial-Input"))
         model.add(Dropout(dropout_rate))
-        model.add(BatchNormalization())
+        #model.add(BatchNormalization())
+        model.add(Dense(20, activation='relu', kernel_initializer='he_uniform', name="First-Dense"))
+        #model.add(BatchNormalization())
+        model.add(Dense(10, activation='relu', kernel_initializer='he_uniform', name="Second-Dense"))
         model.add(Dense(no_classes, activation='softmax'))
         # compile model
-        opt = SGD(learning_rate=0.01, momentum=0.9)
+        opt = SGD(learning_rate=0.001)
         model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
         print(f"Model Summary: {model.summary()}")
         return model
@@ -74,21 +75,21 @@ class CLASSIFIER():
 
     def train(self, no_classes, data):
         model = self._get_model(no_classes=no_classes, dropout_rate=0.2)
-        train_ds, test_ds = self._get_data(data)
+        trainX, trainY, testX, testY = self._get_data(data)
 
-        print("len train_ds", len(train_ds))
-        print("len test_ds", len(test_ds))
+        # print("\nlen trainX", len(trainX))
+        # print("len testX", len(testX))
 
-        print("train_ds", train_ds)
-        print("test_ds", test_ds)
+        # print("\ntrainX", trainX)
+        # print("trainY", trainY)
+        # print("testX", testX)
 
         # fit model
         print("\nFitting model")
-        history = model.fit(train_ds, epochs=100, batch_size=7, validation_data=test_ds, verbose=1)
-        #history = model.fit(tf.expand_dims(train_ds, axis=-1), epochs=100, batch_size=7, validation_data=test_ds, verbose=1)
+        history = model.fit(trainX, trainY, epochs=60, batch_size=7, validation_data=(testX, testY), verbose=1)
 
         # evaluate model
-        _, acc = model.evaluate(test_ds, verbose=0)
+        _, acc = model.evaluate(testX, testY, verbose=0)
         print('> %.3f' % (acc * 100.0))
 
 
@@ -110,7 +111,7 @@ def test():
     with open('training_data.pickle', 'rb') as f:
         training_data = pickle.load(f)
 
-    no_classes = 5
+    no_classes = 1
     classifier.train(no_classes, training_data)
 
 
