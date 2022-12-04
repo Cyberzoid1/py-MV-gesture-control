@@ -138,6 +138,12 @@ class MEDIAHANDS():
             return n / max_value
 
         temp_landmark_list = list(map(normalize_, temp_landmark_list))
+        
+        # Round results to significant digits + a few
+        def round_(n):
+            return round(n, 5)
+
+        temp_landmark_list = list(map(round_, temp_landmark_list))
 
         return temp_landmark_list
 
