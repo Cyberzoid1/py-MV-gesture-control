@@ -61,9 +61,11 @@ class MEDIAHANDS():
 
         if results.multi_hand_landmarks:
             landmark_list_nom_return = [] # Return variable
+            landmark_list_return = []
             for hand_landmarks in results.multi_hand_landmarks:
                 #print("----------------------------")
                 landmark_list = self.process_landmarks(image, hand_landmarks)
+                landmark_list_return.append(landmark_list)
                 #print(f"list: {landmark_list}")
                 landmark_list_nom = self.normalize_landmarks(image, landmark_list)
                 landmark_list_nom_return.append(landmark_list_nom) # Append to return variable
@@ -74,10 +76,9 @@ class MEDIAHANDS():
                     self.mp_hands.HAND_CONNECTIONS,
                     self.mp_drawing_styles.get_default_hand_landmarks_style(),
                     self.mp_drawing_styles.get_default_hand_connections_style())
-            return image, landmark_list_nom_return
+            return image, landmark_list_nom_return, landmark_list_return
         else:
-            results = None
-            return image, results
+            return image, None, None
 
 
     # Inspired by: https://github.com/kinivi/hand-gesture-recognition-mediapipe/blob/0e737bb8c45ea03f6fafb1f5dbfe9246c34a8003/app.py#L215
@@ -150,16 +151,37 @@ class MEDIAHANDS():
         return temp_landmark_list
 
 
-    def disploy_output(self, image):
+    def display_output(self, image):
         """Display image on screen
 
         Args:
             image (numpy): Input image
         """
-        cv2.imshow('MediaPipe Hands', cv2.flip(image, 1))
+        cv2.imshow('MediaPipe Hands', image)#, cv2.flip(image, 1))
         if cv2.waitKey(5) & 0xFF == 27:
             exit()
 
+
+    def draw_boxinfo(self, image, hand_points, message="-"):
+        # Find extreams
+        minx, miny, maxx, maxy = 0, 0, 0, 0
+        if hand_points is not None:
+            for hand in hand_points:
+                hand = np.array(hand)
+                # for pair in hand:
+                #     print(pair)
+                maxx = max(hand[:,0])
+                maxy = max(hand[:,1])
+                minx = min(hand[:,0])
+                miny = min(hand[:,1])
+
+            cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
+            cv2.rectangle(image, (minx, miny-40), (maxx, miny), (255,30,0), -1)
+            
+            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (36, 255,12), 1)
+        
+        return image
+    
 
     def run(self):
         """Main gesture function
@@ -167,9 +189,11 @@ class MEDIAHANDS():
         while True:
             t_curr = time.perf_counter()
             img = self.get_image()
-            img, hand_results = self.process_image(img)
-            self.disploy_output(img)
+            img, hand_results, hand_points = self.process_image(img)
+            img = self.draw_boxinfo(img, hand_points)
+            self.display_output(img)
             t_compute = time.perf_counter() - t_curr
+            time.sleep(.3)
             #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
 
 
@@ -178,8 +202,9 @@ class MEDIAHANDS():
         """
         t_curr = time.perf_counter()
         img = self.get_image()
-        img, hand_results = self.process_image(img)
-        self.disploy_output(img)
+        img, hand_results, hand_points = self.process_image(img)
+        img = self.draw_boxinfo(img, hand_points)
+        self.display_output(img)
         t_compute = time.perf_counter() - t_curr
         #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
         return hand_results
