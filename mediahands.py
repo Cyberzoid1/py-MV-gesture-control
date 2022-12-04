@@ -132,13 +132,15 @@ class MEDIAHANDS():
             itertools.chain.from_iterable(temp_landmark_list))
 
         # Normalization
+        #print(temp_landmark_list)
         max_value = max(list(map(abs, temp_landmark_list)))
+        #print(max_value)
 
         def normalize_(n):
             return n / max_value
 
         temp_landmark_list = list(map(normalize_, temp_landmark_list))
-        
+
         # Round results to significant digits + a few
         def round_(n):
             return round(n, 5)
@@ -168,7 +170,7 @@ class MEDIAHANDS():
             img, hand_results = self.process_image(img)
             self.disploy_output(img)
             t_compute = time.perf_counter() - t_curr
-            print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
+            #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
 
 
     def run_once(self):
@@ -179,7 +181,7 @@ class MEDIAHANDS():
         img, hand_results = self.process_image(img)
         self.disploy_output(img)
         t_compute = time.perf_counter() - t_curr
-        print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
+        #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
         return hand_results
 
 

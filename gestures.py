@@ -14,9 +14,9 @@ def detect_gestures():
     print("Start Gestures")
     while True:
         hands_results = hands.run_once()
-        print(hands_results)
+        #print(hands_results)
         if hands_results is not None:
-            pass
+            classifier.categorize(hands_results)
 
 
 def train_gestures():

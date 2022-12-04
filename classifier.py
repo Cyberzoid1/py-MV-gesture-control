@@ -11,6 +11,10 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import Dropout
 
+# Disables GPU
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 class CLASSIFIER():
     def __init__(self):
         self.model_save_path = "gesture.model"
@@ -150,12 +154,13 @@ class CLASSIFIER():
 
 
     def categorize(self, input):
-        print(f"categorizing input: {input}")
+        #print(f"Raw input: {input}")
         if self.model is None:
             self._load_model()
-        result = self.model.predict(input)
-        print(f"Categorize result: {result}")
-        return result
+        result_all = self.model.predict(input, verbose=0)
+        result = tf.argmax(result_all, axis=1)
+        print(f"Categorize result: {result}\tAll:{result_all}")
+        return result, result_all
 
 
 # For local testing
