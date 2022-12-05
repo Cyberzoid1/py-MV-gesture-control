@@ -59,15 +59,13 @@ class GESTURES():
     def draw_boxinfo(self, image, hand_points, message="-"):
         # Find extreams
         minx, miny, maxx, maxy = 0, 0, 0, 0
+        #       print(hand_points)
         if hand_points is not None:
-            for hand in hand_points:
-                hand = np.array(hand)
-                # for pair in hand:
-                #     print(pair)
-                maxx = max(hand[:,0])
-                maxy = max(hand[:,1])
-                minx = min(hand[:,0])
-                miny = min(hand[:,1])
+            hand = np.array(hand_points)
+            maxx = max(hand[:,0])
+            maxy = max(hand[:,1])
+            minx = min(hand[:,0])
+            miny = min(hand[:,1])
 
             cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
 
@@ -81,9 +79,8 @@ def detect_gestures():
     print("Start Gestures")
     gesture = GESTURES()
     actions = ACTION_CONTROLLER()
-    actions.add(3, KEYBOARD_ACTION('k'))
-    actions.add(6, HASS_ACTION())           # hard coded to tree
-    actions.add(7, KEYBOARD_ACTION('K_LEFT'))
+    actions.add(7, KEYBOARD_ACTION(' '))
+    #actions.add(6, HASS_ACTION())           # hard coded to tree
 
     while True:
         try:
@@ -93,21 +90,25 @@ def detect_gestures():
             result_msg = "-"
             if hand_results is not None:
                 #print(hand_results)
-                class_result, class_result_all = classifier.categorize(hand_results)
-                if class_result is not None:
-                    actions.call(class_result)  # Perform gesture action
+                if len(hand_results) > 1: # add a delimiter when multiple hands detected
+                    print("------------------") 
+                for i_hand, hand_result in enumerate(hand_results):
+                    class_result, class_result_all = classifier.categorize([hand_result])
+                    if class_result is not None:
+                        actions.call(class_result)  # Perform gesture action
 
-                    if isinstance(class_result, int):
-                        if len(gesture.gesture_table) > class_result:
-                            result_msg = f"{gesture.gesture_table[class_result]} {class_result_all[0][class_result]:.2f}"
-                            #print(f"  result_msg {rkkesult_msg} from {class_result}")
-                            print(f"Detected: {result_msg}")
+                        if isinstance(class_result, int):
+                            if len(gesture.gesture_table) > class_result:
+                                result_msg = f"{gesture.gesture_table[class_result]} {class_result_all[0][class_result]:.2f}"
+                                #print(f"  result_msg {rkkesult_msg} from {class_result}")
+                                print(f"Detected: {result_msg}")
+ 
+                    elif class_result is None:
+                        result_msg = "Unknown"
 
-                elif class_result is None:
-                    result_msg = "Unknown"
+                    image = gesture.draw_boxinfo(image, hand_points[i_hand], message=str(result_msg))
 
-            image_an = gesture.draw_boxinfo(image, hand_points, message=str(result_msg))
-            gesture.display_output(image_an)
+            gesture.display_output(image)
 
         except KeyboardInterrupt:
             cv2.destroyAllWindows()

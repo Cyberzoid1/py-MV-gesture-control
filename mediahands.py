@@ -37,9 +37,9 @@ class MEDIAHANDS():
         # To improve performance, optionally mark the image as not writeable to
         # pass by reference.
         image.flags.writeable = False
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image2 = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        results = self.hands.process(image)
+        results = self.hands.process(image2)
 
         if results.multi_hand_landmarks:
             landmark_list_nom_return = [] # Return variable
