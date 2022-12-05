@@ -1,6 +1,9 @@
 import csv
 import keyboard
+import cv2
+import numpy as np
 import pickle
+from actions import ACTION_CONTROLLER, KEYBOARD_ACTION
 from classifier import CLASSIFIER
 from mediahands import MEDIAHANDS
 from mykb import KEYBOARD_LOG
@@ -9,17 +12,92 @@ from mykb import KEYBOARD_LOG
 hands = MEDIAHANDS()
 classifier = CLASSIFIER()
 
+class GESTURES():
+    def __init__(self):
+        self.hands = MEDIAHANDS()
+        self.classifier = CLASSIFIER()
+        self.mykb = KEYBOARD_LOG()
+        
+        retval = self.cap = cv2.VideoCapture(0)
+        
+        self.gesture_table = ["Fist", "One", "Two", "Three", "Four", "Five", "Rock", "Gunk", "L"]
+        
+    def get_image(self):
+        """Capture image frame
+
+        Returns:
+            numpy: Image frame
+        """
+        if not self.cap.isOpened():
+            print("Cap closed")
+            self.cap.open()
+
+        retval, image = self.cap.read()
+
+        #if not retval:
+        #    print("Ignoring empty camera frame.")
+
+        return image
+    
+    
+    def display_output(self, image):
+        """Display image on screen
+
+        Args:
+            image (numpy): Input image
+        """
+        cv2.imshow('MediaPipe Hands', image)#, cv2.flip(image, 1))
+        if cv2.waitKey(5) & 0xFF == 27:
+            exit()
+    
+    
+    def draw_boxinfo(self, image, hand_points, message="-"):
+        # Find extreams
+        minx, miny, maxx, maxy = 0, 0, 0, 0
+        if hand_points is not None:
+            for hand in hand_points:
+                hand = np.array(hand)
+                # for pair in hand:
+                #     print(pair)
+                maxx = max(hand[:,0])
+                maxy = max(hand[:,1])
+                minx = min(hand[:,0])
+                miny = min(hand[:,1])
+
+            cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
+
+            cv2.rectangle(image, (minx, miny-40), (maxx, miny), (255,30,0), -1)          
+            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (36, 255,12), 1)
+        
+        return image
+
 
 def detect_gestures():
     print("Start Gestures")
+    gesture = GESTURES()
+    actions = ACTION_CONTROLLER()
+    actions.add(KEYBOARD_ACTION('k'))
+
     while True:
-        hands_results = hands.run_once()
-        #print(hands_results)
-        if hands_results is not None:
-            classifier.categorize(hands_results)
+        image = gesture.get_image()
+        hand_results, hand_points = gesture.hands.run_once(image)
+
+        if hand_results is not None:
+            print(hand_results)
+            result, result_all = classifier.categorize(hand_results)
+            actions.call(result)  # Perform gesture action
+        else:
+            result = "-"
+
+        if isinstance(result, int):
+            if len(gesture.gesture_table) > result:
+                result = gesture.gesture_table[result]
+        image_an = gesture.draw_boxinfo(image, hand_points, message=str(result))
+        gesture.display_output(image_an)
 
 
 def train_gestures():
+    gesture = GESTURES()
     mykb = KEYBOARD_LOG()
     key = mykb.pop_key()
     train_data = []
@@ -28,10 +106,13 @@ def train_gestures():
     # Get training data
     train_index = 0 # Adds an index to each training data
     while key != "q":
-        hands_results = hands.run_once()
+        image = gesture.get_image()
+        hand_results, hand_points = gesture.hands.run_once(image)
+        gesture.display_output(image)
+
         if isinstance(key, str):
-            if key.isdigit():
-                for item in hands_results:
+            if key.isdigit() and hand_results is not None:
+                for item in hand_results:
                     train_data.append((train_index, item, int(key)))
                     train_index += 1
         
@@ -52,12 +133,6 @@ def train_gestures():
         train_data2.append(line)
 
     # Save data to file
-    with open('training_data.pickle2', 'wb') as f:
-        pickle.dump(train_data2, f)
-
-    with open('training_data2.txt', 'w') as f:
-        f.write(str(train_data2))
-    
     with open('training_data.csv', 'w', newline='') as f:
         writer = csv.writer(f, delimiter=',') #, quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
@@ -80,19 +155,13 @@ def train_gestures():
             writer.writerow(row_data)
 
     # Submit training data to classifier
-    no_classes = 5
-    classifier.train(no_classes, train_data2)
+    classifier.train()
 
     return
 
+
 def train_from_file():
-    # Read from file
-    with open('training_data.pickle', 'rb') as f:
-        training_data = pickle.load(f)
-
-    no_classes = 5
-    classifier.train(no_classes, training_data)
-
+    classifier.train()
 
 
 def main():
@@ -102,13 +171,13 @@ def main():
     print(f"You pressed {key}")
 
     if key == "t":
-        print("Entering Training")
+        print("Selected Training\n")
         train_gestures()
     elif key == "y":
-        print("Retraining with past data")
+        print("Selected training with past data\n")
         train_from_file()
     else:
-        print("Detecting gestures")
+        print("Selected gesture detection\n")
         detect_gestures()
 
 if __name__ == "__main__":

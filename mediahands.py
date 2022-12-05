@@ -12,7 +12,7 @@ class MEDIAHANDS():
         self.mp_drawing_styles = mp.solutions.drawing_styles
         self.mp_hands = mp.solutions.hands
 
-        retval = self.cap = cv2.VideoCapture(0)
+        #retval = self.cap = cv2.VideoCapture(0)
 
         self.hands = mp.solutions.hands.Hands(model_complexity=1,
                        min_detection_confidence=0.5,
@@ -22,24 +22,6 @@ class MEDIAHANDS():
         self.mp_drawing_styles = mp.solutions.drawing_styles
 
         print("Gestures Initialized")
-
-
-    def get_image(self):
-        """Capture image frame
-
-        Returns:
-            numpy: Image frame
-        """
-        if not self.cap.isOpened():
-            print("Cap closed")
-            self.cap.open()
-
-        retval, image = self.cap.read()
-
-        #if not retval:
-        #    print("Ignoring empty camera frame.")
-
-        return image
 
 
     def process_image(self, image):
@@ -151,37 +133,6 @@ class MEDIAHANDS():
         return temp_landmark_list
 
 
-    def display_output(self, image):
-        """Display image on screen
-
-        Args:
-            image (numpy): Input image
-        """
-        cv2.imshow('MediaPipe Hands', image)#, cv2.flip(image, 1))
-        if cv2.waitKey(5) & 0xFF == 27:
-            exit()
-
-
-    def draw_boxinfo(self, image, hand_points, message="-"):
-        # Find extreams
-        minx, miny, maxx, maxy = 0, 0, 0, 0
-        if hand_points is not None:
-            for hand in hand_points:
-                hand = np.array(hand)
-                # for pair in hand:
-                #     print(pair)
-                maxx = max(hand[:,0])
-                maxy = max(hand[:,1])
-                minx = min(hand[:,0])
-                miny = min(hand[:,1])
-
-            cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
-            cv2.rectangle(image, (minx, miny-40), (maxx, miny), (255,30,0), -1)
-            
-            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (36, 255,12), 1)
-        
-        return image
-    
 
     def run(self):
         """Main gesture function
@@ -197,17 +148,16 @@ class MEDIAHANDS():
             #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
 
 
-    def run_once(self):
+    def run_once(self, img):
         """Main gesture funtion
         """
         t_curr = time.perf_counter()
-        img = self.get_image()
         img, hand_results, hand_points = self.process_image(img)
-        img = self.draw_boxinfo(img, hand_points)
-        self.display_output(img)
+        #img = self.draw_boxinfo(img, hand_points)
+        #self.display_output(img)
         t_compute = time.perf_counter() - t_curr
         #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
-        return hand_results
+        return hand_results, hand_points
 
 
 def main():

@@ -23,53 +23,6 @@ class CLASSIFIER():
     def _load_model(self):
         self.model = tf.keras.models.load_model(self.model_save_path)
 
-    def _get_data(self, data):
-        # https://stackoverflow.com/a/68620356
-        # Extract features and labels from data
-        
-        # Testing data override
-        # data = [([1,2,3,4,5], 1),
-        #         ([1,2,3,4,5], 1),
-        #         ([1,2,2,2,5], 2),
-        #         ([1,2,2,2,5], 2),
-        #         ([1,3,3,3,5], 3)]
-
-        random.shuffle(data)
-
-        datasetX = np.array([x[0] for x in data])
-        datasetY = np.array([x[1] for x in data])
-
-        print(f"\nLen x: {len(datasetX)}, Len y: {len(datasetY)}")
-
-        #creating a 2D array filled with 0's
-        labels = np.zeros((datasetY.size, datasetY.max()+1), dtype=int)
-
-        #replacing 0 with a 1 at the index of the original array
-        labels[np.arange(datasetY.size),datasetY] = 1 
-        
-        # Split dataset
-        train_split = int(round(len(datasetX)*0.8))
-        print(f"Samples: {len(datasetX)}  Split: {train_split}")
-        trainX = datasetX[:train_split]
-        trainY = labels[:train_split]
-        testX = datasetX[train_split:]
-        testY = labels[train_split:]
-        
-        # print("\nprinting datasetX elements")
-        # for i, element in enumerate(trainX):
-        #     print(f"datasetX Element: {i}")
-        #     print(element)
-        
-        # print("\nprinting datasetY elements")
-        # for i, element in enumerate(trainY):
-        #     print(f"datasetY Element: {i}")
-        #     print(element)
-
-        print(type(trainX))
-        print(type(trainY))
-        print("trainX shape: ", trainX.shape)
-        print("trainY shape: ", trainY.shape)
-        return trainX, trainY, testX, testY
 
     def _get_data2(self):
         data = pd.read_csv("training_data.csv",
@@ -106,16 +59,22 @@ class CLASSIFIER():
 
         print("trainX shape: ", trainX.shape)
         print("trainY shape: ", trainY.shape)
+        
+        # print("\ntrainX", trainX)
+        print("trainY", trainY)
+        # print("testX", testX)
+        # print("testY", testY)
+
         return trainX, trainY, testX, testY
 
     def _get_model(self, no_classes=None, dropout_rate=0.2):
         model = Sequential()
         model.add(Input(shape=(42,), name="Initial-Input"))
-        #model.add(Dropout(dropout_rate))
+        model.add(Dropout(dropout_rate))
         model.add(BatchNormalization())
         model.add(Dense(50, activation='sigmoid', kernel_initializer='he_uniform', name="First-Dense"))
         #model.add(BatchNormalization())
-        model.add(Dense(10, activation='sigmoid', kernel_initializer='he_uniform', name="Second-Dense"))
+        model.add(Dense(20, activation='sigmoid', kernel_initializer='he_uniform', name="Second-Dense"))
         model.add(Dense(no_classes, activation='softmax'))
         # compile model
         #opt = SGD(learning_rate=0.00001)
@@ -125,21 +84,16 @@ class CLASSIFIER():
         return model
 
 
-    def train(self, no_classes): #, data):
-        self.model = self._get_model(no_classes=no_classes, dropout_rate=0.2)
+    def train(self): #, data):
         #trainX, trainY, testX, testY = self._get_data(data)
         trainX, trainY, testX, testY = self._get_data2()
+        no_classes = trainY.shape[1]
 
-        print("\nlen trainX", trainX.shape)
-        print("len testX", trainY.shape)
-
-        # print("\ntrainX", trainX)
-        # print("trainY", trainY)
-        # print("testX", testX)
+        self.model = self._get_model(no_classes=no_classes, dropout_rate=0.2)
 
         # fit model
         print("\nFitting model")
-        callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+        callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1)
         history = self.model.fit(trainX, trainY, epochs=500, batch_size=64, validation_data=(testX, testY), callbacks=[callback], verbose=1)
 
         # evaluate model
@@ -148,6 +102,7 @@ class CLASSIFIER():
         
         # Save model
         self.model.save(self.model_save_path)
+
 
     def __call__(self, input):
         return self.categorize(input)
@@ -160,7 +115,7 @@ class CLASSIFIER():
         result_all = self.model.predict(input, verbose=0)
         result = tf.argmax(result_all, axis=1)
         print(f"Categorize result: {result}\tAll:{result_all}")
-        return result, result_all
+        return int(result[0]), result_all
 
 
 # For local testing
