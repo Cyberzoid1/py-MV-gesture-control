@@ -1,6 +1,6 @@
 import time
 import keyboard
-from time import sleep
+from requests import post
 
 class ACTION_CONTROLLER():
     def __init__(self):
@@ -44,3 +44,28 @@ class KEYBOARD_ACTION():
         self.lastcalled = time.time()
         return
 
+
+class HASS_ACTION():
+    # https://developers.home-assistant.io/docs/api/rest/
+    def __init__(self) -> None:
+        self.lastcalled = 0
+        self.cooldown = 3
+
+        # TODO Load from .env
+    
+    def __call__(self) -> None:
+        if (self.lastcalled + self.cooldown) > time.time():
+            return # skip
+        url = f"{self.url}/api/services/light/toggle"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "content-type": "application/json",
+        }
+
+        
+        print(headers)
+
+        response = post(url, headers=headers, json=data)
+        print(response.text)
+
+        self.lastcalled = time.time()

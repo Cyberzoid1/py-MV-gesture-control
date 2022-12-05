@@ -3,7 +3,7 @@ import csv
 import keyboard
 import cv2
 import numpy as np
-from actions import ACTION_CONTROLLER, KEYBOARD_ACTION
+from actions import ACTION_CONTROLLER, KEYBOARD_ACTION, HASS_ACTION
 from classifier import CLASSIFIER
 from mediahands import MEDIAHANDS
 from mykb import KEYBOARD_LOG
@@ -67,7 +67,7 @@ class GESTURES():
             cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
 
             cv2.rectangle(image, (minx, miny-40), (maxx, miny), (255,30,0), -1)          
-            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (0,0,255), 1)
+            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0,0,255), 1)
         
         return image
 
@@ -77,7 +77,8 @@ def detect_gestures():
     gesture = GESTURES()
     actions = ACTION_CONTROLLER()
     actions.add(3, KEYBOARD_ACTION('k'))
-    actions.add(6, KEYBOARD_ACTION('R'))
+    actions.add(6, HASS_ACTION())           # hard coded to tree
+    actions.add(7, KEYBOARD_ACTION('K_LEFT'))
 
     while True:
         try:
@@ -93,7 +94,7 @@ def detect_gestures():
 
                     if isinstance(class_result, int):
                         if len(gesture.gesture_table) > class_result:
-                            result_msg = f"{gesture.gesture_table[class_result]} - {class_result_all[0][class_result]:.2f}"
+                            result_msg = f"{gesture.gesture_table[class_result]} {class_result_all[0][class_result]:.2f}"
                             #print(f"  result_msg {rkkesult_msg} from {class_result}")
                             print(f"Detected: {result_msg}")
 
