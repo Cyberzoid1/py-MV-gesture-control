@@ -139,10 +139,12 @@ class MEDIAHANDS():
         """
         while True:
             t_curr = time.perf_counter()
+
             img = self.get_image()
             img, hand_results, hand_points = self.process_image(img)
             img = self.draw_boxinfo(img, hand_points)
             self.display_output(img)
+
             t_compute = time.perf_counter() - t_curr
             time.sleep(.3)
             #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
@@ -153,10 +155,10 @@ class MEDIAHANDS():
         """
         t_curr = time.perf_counter()
         img, hand_results, hand_points = self.process_image(img)
-        #img = self.draw_boxinfo(img, hand_points)
-        #self.display_output(img)
+
         t_compute = time.perf_counter() - t_curr
         #print(f"Compute time: {t_compute:.3f}\tFPS: {1/t_compute:.2f}")
+
         return hand_results, hand_points
 
 

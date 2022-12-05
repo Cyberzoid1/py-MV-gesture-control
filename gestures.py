@@ -19,6 +19,7 @@ class GESTURES():
         self.mykb = KEYBOARD_LOG()
         
         retval = self.cap = cv2.VideoCapture(0)
+        #retvtal = self.cap = cv2.VideoCapture('rtsp://somecamera.com')
         
         self.gesture_table = ["Fist", "One", "Two", "Three", "Four", "Five", "Rock", "Gun", "L"]
         
@@ -34,11 +35,15 @@ class GESTURES():
 
         retval, image = self.cap.read()
 
+        # print(type(image))
+        # print(image.shape)
+        #image = cv2.resize(image, (1280, 720), interpolation = cv2.INTER_AREA)
+
         #if not retval:
         #    print("Ignoring empty camera frame.")
 
         return image
-    
+
     
     def display_output(self, image):
         """Display image on screen
@@ -124,7 +129,8 @@ def train_gestures():
     while key != "q":
         image = gesture.get_image()
         hand_results, hand_points = gesture.hands.run_once(image)
-        gesture.display_output(image)
+        image_an = gesture.draw_boxinfo(image, hand_points, message="Training")
+        gesture.display_output(image_an)
 
         if isinstance(key, str):
             if key.isdigit() and hand_results is not None:

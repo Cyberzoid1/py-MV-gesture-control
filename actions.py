@@ -52,6 +52,8 @@ class HASS_ACTION():
         self.cooldown = 3
 
         # TODO Load from .env
+        self.token = "secret"
+        self.url = "https://localhost"
     
     def __call__(self) -> None:
         if (self.lastcalled + self.cooldown) > time.time():
@@ -62,8 +64,7 @@ class HASS_ACTION():
             "content-type": "application/json",
         }
 
-        
-        print(headers)
+        data = {"entity_id": "light.living_room_tree"}
 
         response = post(url, headers=headers, json=data)
         print(response.text)
