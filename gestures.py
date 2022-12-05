@@ -76,7 +76,8 @@ def detect_gestures():
     print("Start Gestures")
     gesture = GESTURES()
     actions = ACTION_CONTROLLER()
-    actions.add(KEYBOARD_ACTION('k'))
+    actions.add(3, KEYBOARD_ACTION('k'))
+    actions.add(6, KEYBOARD_ACTION('R'))
 
     while True:
         image = gesture.get_image()
@@ -160,10 +161,6 @@ def train_gestures():
     return
 
 
-def train_from_file():
-    classifier.train()
-
-
 def main():
 
     print("Press key for mode: ")
@@ -175,7 +172,7 @@ def main():
         train_gestures()
     elif key == "y":
         print("Selected training with past data\n")
-        train_from_file()
+        classifier.train()
     else:
         print("Selected gesture detection\n")
         detect_gestures()

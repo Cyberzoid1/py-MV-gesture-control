@@ -1,12 +1,13 @@
+import time
 import keyboard
 from time import sleep
 
 class ACTION_CONTROLLER():
     def __init__(self):
-        self.actions = []
+        self.actions = {}
     
-    def add(self, action):
-        self.actions.append(action)
+    def add(self, index, action):
+        self.actions[index] = action
     
     def call(self, n):
         try:
@@ -19,6 +20,8 @@ class ACTION_CONTROLLER():
 class KEYBOARD_ACTION():
     def __init__(self, key) -> None:
         self.key = key
+        self.lastcalled = 0
+        self.cooldown = 2
     
     def __call__(self) -> None:
         """Presses key on keyboard
@@ -29,7 +32,11 @@ class KEYBOARD_ACTION():
         Returns:
             None
         """
+        if (self.lastcalled + self.cooldown) > time.time():
+            return # skip
+
         print(f"Pressing key {self.key}")
         keyboard.press(self.key)
+        self.lastcalled = time.time()
         return
 
