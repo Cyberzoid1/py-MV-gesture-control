@@ -1,8 +1,8 @@
+import sys
 import csv
 import keyboard
 import cv2
 import numpy as np
-import pickle
 from actions import ACTION_CONTROLLER, KEYBOARD_ACTION
 from classifier import CLASSIFIER
 from mediahands import MEDIAHANDS
@@ -20,7 +20,7 @@ class GESTURES():
         
         retval = self.cap = cv2.VideoCapture(0)
         
-        self.gesture_table = ["Fist", "One", "Two", "Three", "Four", "Five", "Rock", "Gunk", "L"]
+        self.gesture_table = ["Fist", "One", "Two", "Three", "Four", "Five", "Rock", "Gun", "L"]
         
     def get_image(self):
         """Capture image frame
@@ -48,7 +48,7 @@ class GESTURES():
         """
         cv2.imshow('MediaPipe Hands', image)#, cv2.flip(image, 1))
         if cv2.waitKey(5) & 0xFF == 27:
-            exit()
+            sys.exit()
     
     
     def draw_boxinfo(self, image, hand_points, message="-"):
@@ -67,7 +67,7 @@ class GESTURES():
             cv2.rectangle(image, (minx, miny), (maxx, maxy), (255,0,0), 2)
 
             cv2.rectangle(image, (minx, miny-40), (maxx, miny), (255,30,0), -1)          
-            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (36, 255,12), 1)
+            cv2.putText(image, message, (minx, miny-10), cv2.FONT_HERSHEY_COMPLEX, 0.9, (0,0,255), 1)
         
         return image
 
@@ -80,21 +80,35 @@ def detect_gestures():
     actions.add(6, KEYBOARD_ACTION('R'))
 
     while True:
-        image = gesture.get_image()
-        hand_results, hand_points = gesture.hands.run_once(image)
+        try:
+            image = gesture.get_image()
+            hand_results, hand_points = gesture.hands.run_once(image)
 
-        if hand_results is not None:
-            print(hand_results)
-            result, result_all = classifier.categorize(hand_results)
-            actions.call(result)  # Perform gesture action
-        else:
-            result = "-"
+            result_msg = "-"
+            if hand_results is not None:
+                #print(hand_results)
+                class_result, class_result_all = classifier.categorize(hand_results)
+                if class_result is not None:
+                    actions.call(class_result)  # Perform gesture action
 
-        if isinstance(result, int):
-            if len(gesture.gesture_table) > result:
-                result = gesture.gesture_table[result]
-        image_an = gesture.draw_boxinfo(image, hand_points, message=str(result))
-        gesture.display_output(image_an)
+                    if isinstance(class_result, int):
+                        if len(gesture.gesture_table) > class_result:
+                            result_msg = f"{gesture.gesture_table[class_result]} - {class_result_all[0][class_result]:.2f}"
+                            #print(f"  result_msg {rkkesult_msg} from {class_result}")
+                            print(f"Detected: {result_msg}")
+
+                elif class_result is None:
+                    result_msg = "Unknown"
+
+            image_an = gesture.draw_boxinfo(image, hand_points, message=str(result_msg))
+            gesture.display_output(image_an)
+
+        except KeyboardInterrupt:
+            cv2.destroyAllWindows()
+            print("Exiting")
+            sys.exit()
+        except Exception as e:
+            print("An exception of type {0} occurred. Arguments:\n{1!r}".format(type(e).__name__, e.args))
 
 
 def train_gestures():
@@ -162,7 +176,8 @@ def train_gestures():
 
 
 def main():
-
+    detect_gestures()
+    
     print("Press key for mode: ")
     key = keyboard.read_key()
     print(f"You pressed {key}")

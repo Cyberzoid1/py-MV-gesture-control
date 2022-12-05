@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import random
 import tensorflow as tf
-#from tensorflow.keras.utils import to_categorical
+from matplotlib import pyplot as plt
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input
 from tensorflow.keras.layers import Dense
@@ -72,9 +72,11 @@ class CLASSIFIER():
         model.add(Input(shape=(42,), name="Initial-Input"))
         model.add(Dropout(dropout_rate))
         model.add(BatchNormalization())
-        model.add(Dense(50, activation='sigmoid', kernel_initializer='he_uniform', name="First-Dense"))
+        model.add(Dense(100, activation='sigmoid', kernel_initializer='he_uniform', name="First-Dense"))
+        model.add(Dropout(dropout_rate))
         #model.add(BatchNormalization())
-        model.add(Dense(20, activation='sigmoid', kernel_initializer='he_uniform', name="Second-Dense"))
+        model.add(Dense(50, activation='sigmoid', kernel_initializer='he_uniform', name="Second-Dense"))
+        model.add(Dense(10, activation='sigmoid', kernel_initializer='he_uniform', name="Third-Dense"))
         model.add(Dense(no_classes, activation='softmax'))
         # compile model
         #opt = SGD(learning_rate=0.00001)
@@ -83,6 +85,20 @@ class CLASSIFIER():
         print(f"Model Summary: {model.summary()}")
         return model
 
+    def _show_history(self, history):
+        # plot diagnostic learning curves
+        # plot loss
+        plt.subplot(2, 1, 1)
+        plt.title('Cross Entropy Loss')
+        plt.plot(history.history['loss'], color='blue', label='train')
+        plt.plot(history.history['val_loss'], color='orange', label='test')
+        # plot accuracy
+        plt.subplot(2, 1, 2)
+        plt.title('Classification Accuracy')
+        plt.plot(history.history['accuracy'], color='blue', label='train')
+        plt.plot(history.history['val_accuracy'], color='orange', label='test')
+        plt.style.use('seaborn-whitegrid')
+        plt.show()
 
     def train(self): #, data):
         #trainX, trainY, testX, testY = self._get_data(data)
@@ -93,13 +109,15 @@ class CLASSIFIER():
 
         # fit model
         print("\nFitting model")
-        callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=10, verbose=1)
-        history = self.model.fit(trainX, trainY, epochs=500, batch_size=64, validation_data=(testX, testY), callbacks=[callback], verbose=1)
+        callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.002,  patience=10, verbose=1)
+        history = self.model.fit(trainX, trainY, epochs=1000, batch_size=64, validation_data=(testX, testY), callbacks=[callback], verbose=1)
+
+        self._show_history(history)
 
         # evaluate model
         _, acc = self.model.evaluate(testX, testY, verbose=0)
         print('> %.3f' % (acc * 100.0))
-        
+
         # Save model
         self.model.save(self.model_save_path)
 
@@ -113,23 +131,24 @@ class CLASSIFIER():
         if self.model is None:
             self._load_model()
         result_all = self.model.predict(input, verbose=0)
-        result = tf.argmax(result_all, axis=1)
-        print(f"Categorize result: {result}\tAll:{result_all}")
+        
+        # Process results
+        #print(result_all)
+        result_all = (result_all > 0.6) * result_all  # Apply threshold
+        if np.count_nonzero(result_all, axis=None):   # If there are any non zero results
+            result = tf.argmax(result_all, axis=1)
+        else:
+            return None, None
+        
+        #print(f"Categorized result: {result}\tAll:{result_all}")
+
         return int(result[0]), result_all
 
 
 # For local testing
-def test():
-    import pickle
+def train():
     classifier = CLASSIFIER()
-
-    # # Read from file
-    with open('training_data.pickle', 'rb') as f:
-        training_data = pickle.load(f)
-
-    no_classes = 5
-    classifier.train(no_classes) #, training_data)
-
+    classifier.train() #, training_data)
 
 if __name__ == "__main__":
-    test()
+    train()

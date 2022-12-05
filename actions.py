@@ -13,7 +13,11 @@ class ACTION_CONTROLLER():
         try:
             self.actions[n]() # Call action
         except IndexError:
-            print(f"No action registered for {n}")
+            pass
+            #print(f"No action registered for {n}")
+        except KeyError:
+            pass
+            #print(f"No action registered for {n}")
         except Exception as e:
             print("An exception of type {0} occurred. Arguments:\n{1!r}".format(type(e).__name__, e.args))
 
